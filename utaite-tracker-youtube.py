@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import re
 import os
 import sys
@@ -9,10 +11,8 @@ import warnings
 import codecs
 from HTMLParser import HTMLParser
 
+import youtube_dl
 import requests
-
-import nicofetch
-
 config_path = "config.cfg"
 utaites_path = "utaites.txt"
 
@@ -38,7 +38,7 @@ knownGroups = [["After the Rain"], ["Mafumafu", "Soraru"], ["Soralon"],
 
 # CREATE REGEX.
 # Pulls out each bulleted item that has an nicovideo reference in it.
-listItemRegex = r'<li>.+?href="http://www.nicovideo.jp/watch/(.+?)"(?:.|[\n\r])+?</li>'
+listItemRegex = r'<li>.+?href="http://www.youtube.com/(.+?)"(?:.|[\n\r])+?</li>'
 
 unavailableRegex = re.compile(r'<b>(.*?)</b>')
 
@@ -111,30 +111,17 @@ artistsDone = []
 
 print ""
 
-# LOGIN TO NICONICO.
-fetcher = nicofetch.NicoFetcher()
-logged_in = False
-while logged_in is False:
-    mail = raw_input("Niconico email login: ")
-    password = getpass.getpass("Niconico password: ")
-    if fetcher.login(mail, password):
-        print ""
-        print "Logged in!"
-        print ""
-        logged_in = True
-    else:
-        print ""
-        print "Could not log in, retry?"
-        print ""
+
 
 # MAIN LOOP
 # Loop over all the artists in the utaite file.
 with codecs.open(utaites_path, 'r', 'utf-8') as utaites:
+
     for utaite in utaites:
         utaite = utaite.rstrip()
         if not utaite: continue
 
-        utaiteDir = utaiteBaseDir + fileSafe(utaite) + "/" + fileSafe(utaite) + " NND/"
+        utaiteDir = utaiteBaseDir + fileSafe(utaite) + "/" + fileSafe(utaite) + " Youtube/"
 
         utaitePageUrl = utaitePageUrlBase + utaite.replace(" ", "_")
         r = requests.get(utaitePageUrl)
@@ -154,10 +141,11 @@ with codecs.open(utaites_path, 'r', 'utf-8') as utaites:
                 item = match.group(0)
 
                 # DETERMINE IF THE TRACK IS UNAVAILABLE ON NND.
-                avail_match = unavailableRegex.search(item)
-                if avail_match is not None:
-                    if ("Private" in avail_match.group(1)) or ("Taken down on NND" in avail_match.group(1)):
-                       continue
+                #doesnt apply to youtube
+                #avail_match = unavailableRegex.search(item)
+                #if avail_match is not None:
+                #    if ("Private" in avail_match.group(1)) or ("Taken down on NND" in avail_match.group(1)):
+                #       continue
 
                 # CHECK IF THE TRACK HAS ALREADY BEEN DOWNLOADED.
                 # Create folders if they do not exist.
@@ -261,101 +249,69 @@ with codecs.open(utaites_path, 'r', 'utf-8') as utaites:
                 nicoUrl = match.group(1)
 
                 if downloadSong:
+                    asksks = raw_input()
+                    if asksks =="n":
+
+                        sys.exit(0)
+                    else:
+                        pass
                     # DOWNLOAD VIDEO.
                     print utaite.replace("_", " ") + " - " + title
-
-                    # Fetch video data.
-                    vid = fetcher.fetch(nicoUrl)
-                    if vid is None:
-                        print "Could not find the video - Probably private or removed."
-                        print ""
-
-                    else:
-                        if vid.is_economy:
-                            print "Economy mode in effect. Exiting..."
-                            sys.exit()
-
+                    if True:
                         # Download the video.
+                        #filename of audio file
                         audio_dir = utaiteDir + str(track) + " " + fileSafe(title)
-
+                        urlFull = "http://www.youtube.com/"+ nicoUrl
+                        #youtube_dl options
+                        ydl_opts = {
+                            'format': 'bestaudio/best',
+                            'postprocessors': [{
+                                'key': 'FFmpegExtractAudio',
+                                'preferredcodec': 'mp3',
+                                'preferredquality': '192',
+                            }],
+                            'outtmpl': audio_dir,
+                        }
                         try:
-                            vid.save_video(audio_dir, progress_indicator)
+                            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                ydl.download([urlFull])
                         except:
-                            print "Could not download the video - Probably forbidden. Pester developer!"
-                            print "Known issue with swf files. This file is a " + vid.video_extension + " file."
-                            print ""
+                            print "Could not download the video"
                             continue
 
                         print ""
-
-                        # CONVERT TO AUDIO.
-                        sys.stdout.write("Converting...")
-                        sys.stdout.flush()
-
                         # Build featured artists string.
                         featured = ""
                         for artist in artists:
                             featured = featured + artist + ", "
-
                         # Remove trailing comma and space.
                         featured = featured[:-2]
-
                         # Build the tags for the audio file.
                         artist_tag = utaite
                         title_tag = title
                         if featured is not "":
                             title_tag = title_tag + " (feat. " + featured + ")"
-                        album_tag = utaite + " NND"
+                        album_tag = utaite + "YT"
                         genre_tag = "Utaite"
                         track_tag = str(track)
 
-                        # Determine the encoding of the audio by decoding with
-                        # ffmpeg into a null output. This will give informaiton
-                        # about the video file streams without creating any
-                        # other files.
-                        vid_info = subprocess.check_output(["ffmpeg", "-i",
-                            vid._video_path, '-f', 'null', '-'],
-                            stderr=subprocess.STDOUT)
-
-                        # Find the audio stream, which should be output to
-                        # stream #0:1.
-                        audio_match = AudioEncodingRegex.search(vid_info)
-                        if audio_match is None:
-                            print " Error!"
-                            print "Could not determine encoding of audio. Pester developer!"
-                            print ""
-                        else:
-                            encoding = audio_match.group(1)
-
-                            # Translate encoding to file format.
-                            if encoding == "aac":
-                                output_format = ".m4a"
-                            elif encoding == "mp3":
-                                output_format = ".mp3"
-                            else:
-                                print " Error!"
-                                print "Encountered a new audio encoding: " + encoding + ". Pester developer!"
-                                print ""
-                                continue
-
-                            # Direct output to null to avoid crowding the
-                            # terminal window.
-                            FNULL = open(os.devnull, 'w')
-                            subprocess.call(['ffmpeg', '-i', vid._video_path, '-vn',
-                                '-acodec', 'copy', '-metadata', 'title=' + title_tag,
-                                '-metadata', 'artist=' + artist_tag, '-metadata',
-                                'album=' + album_tag, '-metadata', 'track=' + track_tag,
-                                '-metadata', 'genre=' + genre_tag, '-metadata',
-                                'album_artist=' + utaite.replace("_", " "),
-                                '-id3v2_version', '3',
-                                audio_dir + output_format],
-                                stdout=FNULL, stderr=subprocess.STDOUT)
-
-                            print " Done!"
-                            print ""
+                        # Direct output to null to avoid crowding the
+                        # terminal window.
+                        FNULL = open(os.devnull, 'w')
+                        subprocess.call(['ffmpeg', '-i',audio_dir , '-vn',
+                            '-acodec', 'copy', '-metadata', 'title=' + title_tag,
+                            '-metadata', 'artist=' + artist_tag, '-metadata',
+                            'album=' + album_tag, '-metadata', 'track=' + track_tag,
+                            '-metadata', 'genre=' + genre_tag, '-metadata',
+                            'album_artist=' + utaite.replace("_", " "),
+                            '-id3v2_version', '3',
+                            audio_dir + output_format],
+                            stdout=FNULL, stderr=subprocess.STDOUT)
+                        print " Done!"
+                        print ""
 
                             # CLEAN UP UNNEEDED FILES.
-                            os.remove(vid._video_path)
+                            #pretty sure there is none
 
         # Mark the artist as having been completed to avoid downloading copies
         # of collaborations.
