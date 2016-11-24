@@ -13,7 +13,7 @@
 2. Install the requests module - in a command prompt, enter "pip install requests"
 3. Download ffmpeg (https://www.ffmpeg.org/download.html)
 4. Add the location of ffmpeg.exe to your PATH environment variable (.../ffmpeg/bin)
-
+5. (for youtube) install youtube-dl using "pip install youtube-dl"
 ########################
 #        USAGE         #
 ########################
@@ -26,7 +26,12 @@
          (utaite.wikia.com/wiki/UTAITE_NAME => UTAITE NAME in utaites.txt)
 3. Open a command prompt in the directory that Utaite.py was extracted to
      (Shift + right click in windows explorer)
-4. Run the script with "python utaite-tracker.py"
+4. For NND:
+   Run the script with "python utaite-tracker.py"
+   
+   For Youtube:
+   Run python utaite-tracker-youtube.py
+
 5. You will be prompted for your NicoNicoDouga email login and password
 6. Watch your utaite collection grow!
 
