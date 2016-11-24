@@ -28,12 +28,12 @@
      (Shift + right click in windows explorer)
 4. For NND:
    Run the script with "python utaite-tracker.py"
-   
+   You will be prompted for your NicoNicoDouga email login and password
+
    For Youtube:
    Run python utaite-tracker-youtube.py
-
-5. You will be prompted for your NicoNicoDouga email login and password
 6. Watch your utaite collection grow!
+
 
 ########################
 #         NOTES        #
