@@ -1,4 +1,9 @@
- _   _   _             _   _            _____                         _
+This project is archived
+1. youtube-dl is no longer maintained (use yt-dlp instead)
+2. utaite wiki is not very well maintained and is not a good source for keeping track of anything
+3. I was like a high schooler when i made this 
+
+_   _   _             _   _            _____                         _
 | | | | | |_    __ _  (_) | |_    ___  |_   _|  _ __    __ _    ___  | | __   ___   _ __
 | | | | | __|  / _` | | | | __|  / _ \   | |   | '__|  / _` |  / __| | |/ /  / _ \ | '__|
 | |_| | | |_  | (_| | | | | |_  |  __/   | |   | |    | (_| | | (__  |   <  |  __/ | |
